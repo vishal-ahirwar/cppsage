@@ -8,6 +8,9 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build for ${{ matrix.os }}
@@ -79,12 +82,10 @@ jobs:
     
     - name: Create Release
       id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v1
       with:
         tag_name: v${{ github.run_number }}
-        release_name: Release v${{ github.run_number }}
+        name: Release v${{ github.run_number }}
         body: |
           Automated release for commit ${{ github.sha }}
           
@@ -98,20 +99,4 @@ jobs:
           - macOS ARM64 (Apple Silicon)
         draft: false
         prerelease: false
-    
-    - name: Upload Release Assets
-      shell: bash
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        upload_url="${{ steps.create_release.outputs.upload_url }}"
-        for dir in ./artifacts/*/; do
-          asset_name=$(basename "$dir")
-          asset_path="$dir$asset_name"
-          echo "Uploading $asset_name from $asset_path"
-          curl \
-            -H "Authorization: token $GITHUB_TOKEN" \
-            -H "Content-Type: application/octet-stream" \
-            --data-binary @"$asset_path" \
-            "${upload_url%\{*}?name=$asset_name"
-        done
+        files: ./artifacts/*/*.exe,./artifacts/*/cppsage-*
